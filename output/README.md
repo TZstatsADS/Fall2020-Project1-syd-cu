@@ -2,5 +2,5 @@
 
 ### Output folder
 
-The output directory contains analysis output, processed datasets, logs, or other processed things.
+This processed data file include 6 variables relates to gender, and people's financial background. 
 

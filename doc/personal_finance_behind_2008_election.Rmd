@@ -1,0 +1,118 @@
+---
+title: "Project1"
+author: "Siyu Duan"
+date: "9/19/2020"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+
+```{r,echo=FALSE}
+library(tidyverse)
+library(haven)
+library(data.table)
+library(ggplot2)
+```
+
+
+```{r,echo=FALSE}
+anes_dat1<- read_sav("data/anes_timeseries_2008.sav")
+#Dataset relates employment
+use_data<-anes_dat1%>%
+  mutate(
+    gender= as_factor(V081101),
+    employment_status=as_factor(V083222a),
+    income =as_factor(V083249),
+    finance_prediction = as_factor(V083058),
+    personal_future=as_factor(V085061),
+    government_intervention=as_factor(V085297a)
+  )%>%
+  select(gender,employment_status,income, finance_prediction,personal_future,government_intervention)%>%
+  filter_at(vars(1:6), any_vars(!is.na(.)))
+save(use_data, file="./output/use_data.RData")
+```
+
+##Pre-survey
+####What is the people' personal income in 2007 by gender?
+```{r,echo=FALSE,fig.width=6, fig.height=2.5}
+load(file="./output/use_data.RData")
+income_bg <-use_data%>%mutate(individual_income=fct_collapse(income,
+                       "less than $10,000"=c("1. A. None or less than $2,999", "2. B. $3,000 -$4,999", "3. C. $5,000 -$7,499","4. D. $7,500 -$9,999"),
+                       "$10,000-$24,999"=c("5. E. $10,000 -$10,999","6. F. $11,000-$12,499","7. G. $12,500-$14,999","8. H. $15,000-$16,999","9. J. $17,000-$19,999","10. K. $20,000-$21,999","11. M. $22,000-$24,999"),
+                       "$25,000-$99,999"=c("12. N. $25,000-$29,999", "13. P. $30,000-$34,999","14. Q. $35,000-$39,999","15. R. $40,000-$44,999","16. S. $45,000-$49,999","17. T. $50,000-$59,999","18. U. $60,000-$74,999","19. V. $75,000-$89,999", "20. W. $90,000-$99,999"),
+                       "over $100,000"=c("21. X. $100,000-$109,999","22. Y. $110,000-$119,999","23. Z. $120,000-$134,999", "24. AA. $135,000-$149,999", "25. BB. $150,000 and over" )))
+
+
+ggplot(income_bg, aes(x=individual_income,fill=gender)) +
+  geom_histogram(stat="count")+
+  scale_fill_brewer(palette = "Blues")+
+  coord_flip()+
+  labs(title="Annual income of survey participants in 2007")+
+  theme_light()
+
+#https://www.census.gov/prod/2008pubs/p60-235.pdf
+#26804 is the personal median income
+```
+*<br />The meidan of personal annual income in the U.S. is $26804. Out of total 2322 participants, less than half of participants' income above the median, and most of participants' income was lower than the median. In terms of gender income bias,  more women were in the "less than $10,000" group compared to that of men.   For people with income "over $100,000", men dominated over women.  For the rest of categories, the gender split is about the same.   However, this resutls might has bias itself due to unequal male and female participants*
+
+
+
+####What is the employment status of people under the light of financial crisis? What do they think about their personal fince situation in 2009 under the light of financial crisis?  
+```{r,echo=FALSE,fig.width=8}
+emp <-use_data%>%
+  mutate(empoyment_status=fct_collapse(employment_status,
+                              "Refused"="-9. Refused",
+                              "Don't know"="-8. Don't know",
+                              "Working now"="1. R WORKING NOW [10,15-18 in Y6x1]",
+                              "Temporarily Laid off"="2. R TEMPORARILY LAID OFF [20 in Y6x1]",
+                              "Unemployed"="4. R UNEMPLOYED [40 in Y6x1]",
+                              "Retired"="5. R RETIRED [50,51 in Y6x1]",
+                              "Permanently Disabled"="6. R PERMANENTLY DISABLED [60,61 in Y6x1]",
+                              "Homemaker"="7. R HOMEMAKER [70,71,75 in Y6x1]",
+                              "Student"="8. R STUDENT [80,81 in Y6x1]"))
+ggplot(emp, aes(x=employment_status,fill=gender)) +
+  geom_histogram(stat="count")+
+  scale_fill_brewer(palette = "Blues")+
+  coord_flip()+
+  ggtitle("Employment status of survey participants")+
+  ylab("Employment Status")+
+  theme_light()
+
+ggplot(emp, aes(x=finance_prediction,fill=employment_status)) +
+  geom_histogram(stat="count")+
+  scale_fill_brewer(palette = "Blues")+
+  labs(title="Next Year's Financial Prediction of participants")+
+  theme_light()
+```
+*<br />In the employment status plot, it shows that most people were still working right now, and financial crisis may not impact them as much compared to people in other groups. Therefore, it actually make sense in the financial prediction plot that most people felt that thier financial situation would stay the same or even better.   Surprisingly, I didn't see many people were in the unemployment group and laid-off group under the circumtances of financial crisis. It might be due to the limitation of survey sampling method *
+
+
+
+##Post-survey
+####How positive people are regarding to personal future after the presidents was elected? What are people's opinions about government intervention in economics?
+```{r,echo=FALSE,fig.width=15, fig.height=7}
+ggplot(use_data, aes(x=personal_future,fill=gender)) +
+  geom_histogram(stat="count")+
+  labs(title="People's view about personal future by gender")+
+  theme_light()
+
+ggplot(use_data, aes(x=government_intervention,fill=gender)) +
+  geom_histogram(stat="count")+
+  coord_flip()+
+  labs(title="People's view about government intervention")+
+  theme_light()
+```
+*<br />After the presidential election,  most people were optimistic about future in the lead of the new government.  500 of participants were neither optimistic nor pessimistic about future.
+
+As for government intervention,  most people think it is a right thing to do when economics of the country went down.  Also, it might contribute to the reason why democrat wins the election in 2008 because they favor government regulation, people think it is necessary to boost economy*
+
+
+#####In conclusion:
+*In the light to 2008 financial crisis, most participants despite gender had positive views about personal finance, which shows in both pre-survey and post-survey.  Their jobs were not largely impacted by financial crisis which supported their optimistic views about personal future in general after the new president was elected."
+
+When economy of the country went down, more people think that government regulation is neccessary, which might help democrat to win more votes*
